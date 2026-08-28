@@ -1,0 +1,71 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ── Design tokens ── */
+:root {
+  --font-sans: var(--font-bricolage), "Bricolage Grotesque", system-ui, sans-serif;
+
+  /* VedaAI brand palette */
+  --veda-orange: #FF5623;
+  --veda-orange-light: rgba(255, 147, 80, 0.15);
+  --veda-dark: #2B2B2B;
+  --veda-text: #303030;
+  --veda-text-secondary: rgba(94, 94, 94, 0.8);
+  --veda-bg-light: #F6F6F6;
+  --veda-bg-off: #F0F0F0;
+  --veda-border: #CECECE;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    color: var(--veda-text);
+  }
+
+  /* Transparent / hidden scrollbar */
+  *::-webkit-scrollbar {
+    width: 6px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+  }
+  *:hover::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+  }
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+  *:hover {
+    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+  }
+}
+
+/* ── Orbit animation for floating icons ── */
+@keyframes orbit {
+  from {
+    transform: rotate(0deg) translateX(var(--orbit-radius)) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(var(--orbit-radius)) rotate(-360deg);
+  }
+}
