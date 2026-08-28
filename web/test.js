@@ -4,7 +4,7 @@ const cheerio = require('cheerio');
 
 async function test() {
   try {
-    const profileUrl = "https://www.linkedin.com/in/anubhav-shriwastava/";
+    const profileUrl = "https://www.linkedin.com/in/garv-shah-341294244/";
     const cookie = process.env.LINKEDIN_COOKIE;
     const csrfToken = process.env.LINKEDIN_CSRF_TOKEN;
 

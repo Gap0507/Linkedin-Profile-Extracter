@@ -33,7 +33,9 @@
 
   body {
     font-family: var(--font-sans);
-    color: var(--veda-text);
+    color: #e2e8f0;
+    background-color: #020617; /* Slate 950 */
+    min-height: 100vh;
   }
 
   /* Transparent / hidden scrollbar */

@@ -51,10 +51,25 @@ export async function GET(request: Request) {
     // Basic Extraction
     const name = $('h1.text-color-text.heading-large').text().trim();
     
-    // Profile Picture
+    // Profile Picture (Targeting the specific container to avoid navbar logged-in user image)
     let profilePicture = $('#profile-picture-container img').attr('data-delayed-url') || 
-                         $('#profile-picture-container img').attr('src') || 
-                         $('.artdeco-entity-image').attr('data-delayed-url') || '';
+                         $('#profile-picture-container img').attr('src') || '';
+    
+    // Fallback if the container isn't found: look for an image whose alt text contains the user's name
+    if (!profilePicture) {
+        $('img').each((_, el) => {
+            const src = $(el).attr('src') || $(el).attr('data-delayed-url') || '';
+            const alt = $(el).attr('alt') || '';
+            if (src.includes('profile-displayphoto') && alt.toLowerCase().includes(name.toLowerCase())) {
+                profilePicture = src;
+            }
+        });
+    }
+
+    // Fix HTML entity encoding in the URL (&amp; to &)
+    if (profilePicture) {
+        profilePicture = profilePicture.replace(/&amp;/g, '&');
+    }
     
     // Headline is usually in the next div
     const headline = $('h1').parent().next('.body-small.text-color-text').text().trim() || 
@@ -77,28 +92,126 @@ export async function GET(request: Request) {
     // About
     const about = $('.about-section .description').text().trim();
 
-    // Lists
+    const cleanText = (str: string) => {
+        if (!str) return '';
+        return str.replace(/\s+/g, ' ').replace(/…more|See less/g, '').trim();
+    };
+
     const experience: any[] = [];
-    $('.experience-container > ol > li.profile-entity-lockup').each((_, el) => {
-        const text = $(el).text().replace(/\s+/g, ' ').trim();
-        experience.push(text);
-    });
-
     const education: any[] = [];
-    $('.education-container > ol > li.profile-entity-lockup').each((_, el) => {
-        const text = $(el).text().replace(/\s+/g, ' ').trim();
-        education.push(text);
-    });
+    const skills: string[] = [];
+    const accomplishments: any[] = [];
+    const recommendations: string[] = [];
+    const contacts: string[] = [];
+    let recentPost: any = null;
 
-    const skills: any[] = [];
-    // Skills might be in a generic collapsible-list-container, but let's check for "Skills" h2
-    $('.collapsible-list-container').each((_, sectionEl) => {
-        const title = $(sectionEl).find('h2').first().text().trim();
-        if (title.toLowerCase().includes('skills')) {
-            $(sectionEl).find('ol > li.profile-entity-lockup').each((_, el) => {
-                const text = $(el).text().replace(/\s+/g, ' ').trim();
-                skills.push(text);
+    $('section').each((_, sec) => {
+        const h2 = $(sec).find('h2').text().trim().toLowerCase();
+        
+        if (h2 === 'experience') {
+            $(sec).find('li').each((_, el) => {
+                const $el = $(el);
+                let logoUrl = $el.find('img').attr('data-delayed-url') || $el.find('img').attr('src') || '';
+                if (logoUrl) logoUrl = logoUrl.replace(/&amp;/g, '&');
+                
+                const title = cleanText($el.find('.list-item-heading').text()) || cleanText($el.find('.body-medium-bold').first().text());
+                
+                let subtitle = '';
+                const $headingDiv = $el.find('.list-item-heading').length ? $el.find('.list-item-heading') : $el.find('.body-medium-bold').first();
+                if ($headingDiv.length) {
+                    subtitle = cleanText($headingDiv.next('.body-small').text());
+                }
+            
+                let metadata: string[] = [];
+                $el.find('.text-color-text-low-emphasis').each((i, metaEl) => {
+                    const mText = cleanText($(metaEl).text());
+                    if (mText) metadata.push(mText);
+                });
+            
+                const description = cleanText($el.find('.body-small.text-color-text').text());
+            
+                if (title || subtitle) {
+                    // Deduplicate
+                    if (!experience.find(e => e.title === title && e.subtitle === subtitle)) {
+                        experience.push({ title, subtitle, metadata, description, logoUrl });
+                    }
+                }
             });
+        } else if (h2 === 'education') {
+            $(sec).find('li').each((_, el) => {
+                const $el = $(el);
+                let logoUrl = $el.find('img').attr('data-delayed-url') || $el.find('img').attr('src') || '';
+                if (logoUrl) logoUrl = logoUrl.replace(/&amp;/g, '&');
+                
+                const title = cleanText($el.find('.list-item-heading').text()) || cleanText($el.find('.body-medium-bold').first().text());
+                
+                let subtitle = '';
+                const $headingDiv = $el.find('.list-item-heading').length ? $el.find('.list-item-heading') : $el.find('.body-medium-bold').first();
+                if ($headingDiv.length) {
+                    subtitle = cleanText($headingDiv.next('.body-small').text());
+                }
+            
+                let metadata: string[] = [];
+                $el.find('.text-color-text-low-emphasis').each((i, metaEl) => {
+                    const mText = cleanText($(metaEl).text());
+                    if (mText) metadata.push(mText);
+                });
+            
+                const description = cleanText($el.find('.body-small.text-color-text').text());
+            
+                if (title || subtitle) {
+                    // Deduplicate
+                    if (!education.find(e => e.title === title && e.subtitle === subtitle)) {
+                        education.push({ title, subtitle, metadata, description, logoUrl });
+                    }
+                }
+            });
+        } else if (h2 === 'skills') {
+            $(sec).find('li').each((_, el) => {
+                let text = cleanText($(el).find('span[dir="ltr"]').text()) || cleanText($(el).text());
+                if (text) {
+                    // Clean up dot separators
+                    text = text.replace(/·/g, '').replace(/•/g, '').trim();
+                    if (text && !skills.includes(text)) {
+                        skills.push(text);
+                    }
+                }
+            });
+        } else if (h2 === 'accomplishments') {
+            $(sec).find('.accomplishment-category').each((_, cat) => {
+                const categoryTitle = cleanText($(cat).find('.category-title').text()) || cleanText($(cat).find('h3').text());
+                const items: string[] = [];
+                $(cat).find('li').each((_, li) => {
+                    items.push(cleanText($(li).text()));
+                });
+                accomplishments.push({ category: categoryTitle, items });
+            });
+            if (accomplishments.length === 0) {
+                $(sec).find('li').each((_, el) => {
+                    const text = cleanText($(el).text());
+                    if (text && !accomplishments.includes(text)) accomplishments.push(text);
+                });
+            }
+        } else if (h2 === 'recommendations') {
+            $(sec).find('li').each((_, el) => {
+                const text = cleanText($(el).text());
+                if (text && !recommendations.includes(text)) recommendations.push(text);
+            });
+        } else if (h2 === 'contact') {
+            $(sec).find('li').each((_, el) => {
+                const value = cleanText($(el).text());
+                if (value && !contacts.includes(value)) contacts.push(value);
+            });
+        } else if (h2 === 'activity') {
+            const $post = $(sec).find('article').first();
+            if ($post.length) {
+                const caption = cleanText($post.find('.feed-shared-update-v2__description').text()) || cleanText($post.find('p').first().text());
+                let picture = $post.find('img').attr('data-delayed-url') || $post.find('img').attr('src') || '';
+                if (picture) picture = picture.replace(/&amp;/g, '&');
+                if (caption || picture) {
+                    recentPost = { caption, picture };
+                }
+            }
         }
     });
 
@@ -113,7 +226,11 @@ export async function GET(request: Request) {
         about,
         experience,
         education,
-        skills
+        skills,
+        accomplishments,
+        recommendations,
+        contacts,
+        recentPost
       }
     });
 
