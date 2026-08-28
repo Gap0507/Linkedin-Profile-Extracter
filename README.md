@@ -1,6 +1,9 @@
 # LinkedIn Profile Extractor
 
 A robust, reverse-engineered LinkedIn profile scraper built with Next.js. This application directly queries LinkedIn's servers and extracts comprehensive profile data without using heavy headless browsers 
+
+🔗 **[Watch the Video Here](https://drive.google.com/file/d/1LYga5eRa-CvBBtWtCpnzSnZErpjF037G/view?usp=sharing)**
+
 ---
 
 ## 🚀 Features
